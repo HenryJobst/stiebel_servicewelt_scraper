@@ -11,6 +11,7 @@ services:
       - stiebel-network
     ports:
       - "5436:5432"
+    restart: unless-stopped
 
   app:
     build:
@@ -27,6 +28,7 @@ services:
       - db
     networks:
       - stiebel-network
+    restart: unless-stopped
 
 volumes:
   postgres_data:
