@@ -292,11 +292,6 @@ def scrape_and_store():
 
     try:
         with conn.cursor() as cur:
-            # cur.execute('''
-            #      INSERT INTO data (timestamp, raumtemp_ist)
-            #      VALUES (%s, %s);
-            #      ''',
-            #             [data_status.timestamp, data_status.raumtemp_ist])
             data_list = [
                 data_status.timestamp,
                 data_status.raumtemp_ist,
