@@ -1,0 +1,37 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - stiebel-network
+    ports:
+      - "5436:5432"
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: stiebel-servicewelt-scraper:latest
+    environment:
+      DB_HOST: db
+      DB_NAME: ${POSTGRES_DB}  # Verwende dieselbe Variable für den DB-Namen
+      DB_USER: ${POSTGRES_USER}  # Verwende dieselbe Variable für den DB-Benutzer
+      DB_PASSWORD: ${POSTGRES_PASSWORD}  # Verwende dieselbe Variable für das DB-Passwort
+      DB_PORT: 5432  # Standard-Port für PostgreSQL, kann auch aus einer Umgebungsvariable gesetzt werden, wenn nötig
+    depends_on:
+      - db
+    networks:
+      - stiebel-network
+
+volumes:
+  postgres_data:
+
+networks:
+  stiebel-network:
+    driver: bridge
+
