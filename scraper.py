@@ -86,6 +86,38 @@ class WpStatus:
     frostschutz: str
 
 
+@dataclass
+class WpEnergy:
+    timestamp: datetime
+    waermemenge_heizen_1_24_h: str
+    waermemenge_heizen_1_12_m: str
+    waermemenge_heizen_13_24_m: str
+    waermemenge_kuehlen_1_24_h: str
+    waermemenge_kuehlen_1_12_m: str
+    waermemenge_kuehlen_13_24_m: str
+    waermemenge_warmwasser_1_24_h: str
+    waermemenge_warmwasser_1_12_m: str
+    waermemenge_warmwasser_13_24_m: str
+    effizienz_heizen_1_24_h: str
+    effizienz_heizen_1_12_m: str
+    effizienz_heizen_13_24_m: str
+    effizienz_kuehlen_1_24_h: str
+    effizienz_kuehlen_1_12_m: str
+    effizienz_kuehlen_13_24_m: str
+    effizienz_warmwasser_1_24_h: str
+    effizienz_warmwasser_1_12_m: str
+    effizienz_warmwasser_13_24_m: str
+    stromverbrauch_heizen_1_24_h: str
+    stromverbrauch_heizen_1_12_m: str
+    stromverbrauch_heizen_13_24_m: str
+    stromverbrauch_kuehlen_1_24_h: str
+    stromverbrauch_kuehlen_1_12_m: str
+    stromverbrauch_kuehlen_13_24_m: str
+    stromverbrauch_warmwasser_1_24_h: str
+    stromverbrauch_warmwasser_1_12_m: str
+    stromverbrauch_warmwasser_13_24_m: str
+
+
 # Umgebungsvariablen lesen
 DB_HOST = os.getenv("DB_HOST")
 DB_NAME = os.getenv("DB_NAME")
@@ -168,6 +200,37 @@ c.execute('''
     laufzeit_starts_abtauen TEXT
     )
 ''')
+
+c.execute('''
+    ALTER TABLE data
+            ADD COLUMN IF NOT EXISTS waermemenge_heizen_1_24_h TEXT,
+            ADD COLUMN IF NOT EXISTS waermemenge_heizen_1_12_m TEXT,
+            ADD COLUMN IF NOT EXISTS waermemenge_heizen_13_24_m TEXT,
+            ADD COLUMN IF NOT EXISTS waermemenge_kuehlen_1_24_h TEXT,
+            ADD COLUMN IF NOT EXISTS waermemenge_kuehlen_1_12_m TEXT,
+            ADD COLUMN IF NOT EXISTS waermemenge_kuehlen_13_24_m TEXT,
+            ADD COLUMN IF NOT EXISTS waermemenge_warmwasser_1_24_h TEXT,
+            ADD COLUMN IF NOT EXISTS waermemenge_warmwasser_1_12_m TEXT,
+            ADD COLUMN IF NOT EXISTS waermemenge_warmwasser_13_24_m TEXT,
+            ADD COLUMN IF NOT EXISTS effizienz_heizen_1_24_h TEXT,
+            ADD COLUMN IF NOT EXISTS effizienz_heizen_1_12_m TEXT,
+            ADD COLUMN IF NOT EXISTS effizienz_heizen_13_24_m TEXT,
+            ADD COLUMN IF NOT EXISTS effizienz_kuehlen_1_24_h TEXT,
+            ADD COLUMN IF NOT EXISTS effizienz_kuehlen_1_12_m TEXT,
+            ADD COLUMN IF NOT EXISTS effizienz_kuehlen_13_24_m TEXT,
+            ADD COLUMN IF NOT EXISTS effizienz_warmwasser_1_24_h TEXT,
+            ADD COLUMN IF NOT EXISTS effizienz_warmwasser_1_12_m TEXT,
+            ADD COLUMN IF NOT EXISTS effizienz_warmwasser_13_24_m TEXT,
+            ADD COLUMN IF NOT EXISTS stromverbrauch_heizen_1_24_h TEXT,
+            ADD COLUMN IF NOT EXISTS stromverbrauch_heizen_1_12_m TEXT,
+            ADD COLUMN IF NOT EXISTS stromverbrauch_heizen_13_24_m TEXT,
+            ADD COLUMN IF NOT EXISTS stromverbrauch_kuehlen_1_24_h TEXT,
+            ADD COLUMN IF NOT EXISTS stromverbrauch_kuehlen_1_12_m TEXT,
+            ADD COLUMN IF NOT EXISTS stromverbrauch_kuehlen_13_24_m TEXT,
+            ADD COLUMN IF NOT EXISTS stromverbrauch_warmwasser_1_24_h TEXT,
+            ADD COLUMN IF NOT EXISTS stromverbrauch_warmwasser_1_12_m TEXT,
+            ADD COLUMN IF NOT EXISTS stromverbrauch_warmwasser_13_24_m TEXT;
+''')
 conn.commit()
 
 
@@ -209,6 +272,7 @@ def extract_timestamp(soup):
 def scrape_and_store():
     url_status = "http://192.168.1.118/?s=1,0"
     url_wp = "http://192.168.1.118/?s=1,1"
+    url_energy = "http://192.168.1.118/?s=1,8"
 
     soup_status = parse(url_status)
     if soup_status is None:
@@ -216,6 +280,10 @@ def scrape_and_store():
 
     soup_wp = parse(url_wp)
     if soup_wp is None:
+        return
+
+    soup_energy = parse(url_energy)
+    if soup_energy is None:
         return
 
     timestamp = extract_timestamp(soup_wp)
@@ -290,6 +358,37 @@ def scrape_and_store():
         laufzeit_starts_abtauen=extract_data(soup_wp, 'LAUFZEIT', 'STARTS ABTAUEN'),
         )
 
+    data_energy = WpEnergy(
+        timestamp=timestamp,
+        waermemenge_heizen_1_24_h=extract_data(soup_energy, 'WÄRMEMENGE', 'HEIZEN 1-24 h'),
+        waermemenge_heizen_1_12_m=extract_data(soup_energy, 'WÄRMEMENGE', 'HEIZEN 1-12 M'),
+        waermemenge_heizen_13_24_m=extract_data(soup_energy, 'WÄRMEMENGE', 'HEIZEN 13-24 M'),
+        waermemenge_kuehlen_1_24_h=extract_data(soup_energy, 'WÄRMEMENGE', 'KÜHLEN 1-24 h'),
+        waermemenge_kuehlen_1_12_m=extract_data(soup_energy, 'WÄRMEMENGE', 'KÜHLEN 1-12 M'),
+        waermemenge_kuehlen_13_24_m=extract_data(soup_energy, 'WÄRMEMENGE', 'KÜHLEN 13-24 M'),
+        waermemenge_warmwasser_1_24_h=extract_data(soup_energy, 'WÄRMEMENGE', 'WARMWASSER 1-24 h'),
+        waermemenge_warmwasser_1_12_m=extract_data(soup_energy, 'WÄRMEMENGE', 'WARMWASSER 1-12 M'),
+        waermemenge_warmwasser_13_24_m=extract_data(soup_energy, 'WÄRMEMENGE', 'WARMWASSER 13-24 M'),
+        effizienz_heizen_1_24_h=extract_data(soup_energy, 'EFFIZIENZ', 'HEIZEN 1-24 h'),
+        effizienz_heizen_1_12_m=extract_data(soup_energy, 'EFFIZIENZ', 'HEIZEN 1-12 M'),
+        effizienz_heizen_13_24_m=extract_data(soup_energy, 'EFFIZIENZ', 'HEIZEN 13-24 M'),
+        effizienz_kuehlen_1_24_h=extract_data(soup_energy, 'EFFIZIENZ', 'KÜHLEN 1-24 h'),
+        effizienz_kuehlen_1_12_m=extract_data(soup_energy, 'EFFIZIENZ', 'KÜHLEN 1-12 M'),
+        effizienz_kuehlen_13_24_m=extract_data(soup_energy, 'EFFIZIENZ', 'KÜHLEN 13-24 M'),
+        effizienz_warmwasser_1_24_h=extract_data(soup_energy, 'EFFIZIENZ', 'WARMWASSER 1-24 h'),
+        effizienz_warmwasser_1_12_m=extract_data(soup_energy, 'EFFIZIENZ', 'WARMWASSER 1-12 M'),
+        effizienz_warmwasser_13_24_m=extract_data(soup_energy, 'EFFIZIENZ', 'WARMWASSER 13-24 M'),
+        stromverbrauch_heizen_1_24_h=extract_data(soup_energy, 'STROMVERBRAUCH', 'HEIZEN 1-24 h'),
+        stromverbrauch_heizen_1_12_m=extract_data(soup_energy, 'STROMVERBRAUCH', 'HEIZEN 1-12 M'),
+        stromverbrauch_heizen_13_24_m=extract_data(soup_energy, 'STROMVERBRAUCH', 'HEIZEN 13-24 M'),
+        stromverbrauch_kuehlen_1_24_h=extract_data(soup_energy, 'STROMVERBRAUCH', 'KÜHLEN 1-24 h'),
+        stromverbrauch_kuehlen_1_12_m=extract_data(soup_energy, 'STROMVERBRAUCH', 'KÜHLEN 1-12 M'),
+        stromverbrauch_kuehlen_13_24_m=extract_data(soup_energy, 'STROMVERBRAUCH', 'KÜHLEN 13-24 M'),
+        stromverbrauch_warmwasser_1_24_h=extract_data(soup_energy, 'STROMVERBRAUCH', 'WARMWASSER 1-24 h'),
+        stromverbrauch_warmwasser_1_12_m=extract_data(soup_energy, 'STROMVERBRAUCH', 'WARMWASSER 1-12 M'),
+        stromverbrauch_warmwasser_13_24_m=extract_data(soup_energy, 'STROMVERBRAUCH', 'WARMWASSER 13-24 M')
+        )
+
     try:
         with conn.cursor() as cur:
             data_list = [
@@ -352,7 +451,34 @@ def scrape_and_store():
                 data_wp.laufzeit_nhz_2,
                 data_wp.laufzeit_nhz_1_2,
                 data_wp.laufzeit_zeit_abtauen,
-                data_wp.laufzeit_starts_abtauen
+                data_wp.laufzeit_starts_abtauen,
+                data_energy.waermemenge_heizen_1_24_h,
+                data_energy.waermemenge_heizen_1_12_m,
+                data_energy.waermemenge_heizen_13_24_m,
+                data_energy.waermemenge_kuehlen_1_24_h,
+                data_energy.waermemenge_kuehlen_1_12_m,
+                data_energy.waermemenge_kuehlen_13_24_m,
+                data_energy.waermemenge_warmwasser_1_24_h,
+                data_energy.waermemenge_warmwasser_1_12_m,
+                data_energy.waermemenge_warmwasser_13_24_m,
+                data_energy.effizienz_heizen_1_24_h,
+                data_energy.effizienz_heizen_1_12_m,
+                data_energy.effizienz_heizen_13_24_m,
+                data_energy.effizienz_kuehlen_1_24_h,
+                data_energy.effizienz_kuehlen_1_12_m,
+                data_energy.effizienz_kuehlen_13_24_m,
+                data_energy.effizienz_warmwasser_1_24_h,
+                data_energy.effizienz_warmwasser_1_12_m,
+                data_energy.effizienz_warmwasser_13_24_m,
+                data_energy.stromverbrauch_heizen_1_24_h,
+                data_energy.stromverbrauch_heizen_1_12_m,
+                data_energy.stromverbrauch_heizen_13_24_m,
+                data_energy.stromverbrauch_kuehlen_1_24_h,
+                data_energy.stromverbrauch_kuehlen_1_12_m,
+                data_energy.stromverbrauch_kuehlen_13_24_m,
+                data_energy.stromverbrauch_warmwasser_1_24_h,
+                data_energy.stromverbrauch_warmwasser_1_12_m,
+                data_energy.stromverbrauch_warmwasser_13_24_m
                 ]
             cur.execute('''
                  INSERT INTO data (
@@ -415,14 +541,44 @@ def scrape_and_store():
                      laufzeit_nhz_2,
                      laufzeit_nhz_1_2,
                      laufzeit_zeit_abtauen,
-                     laufzeit_starts_abtauen
+                     laufzeit_starts_abtauen,
+                     waermemenge_heizen_1_24_h,
+                     waermemenge_heizen_1_12_m,
+                     waermemenge_heizen_13_24_m,
+                     waermemenge_kuehlen_1_24_h,
+                     waermemenge_kuehlen_1_12_m,
+                     waermemenge_kuehlen_13_24_m,
+                     waermemenge_warmwasser_1_24_h,
+                     waermemenge_warmwasser_1_12_m,
+                     waermemenge_warmwasser_13_24_m,
+                     effizienz_heizen_1_24_h,
+                     effizienz_heizen_1_12_m,
+                     effizienz_heizen_13_24_m,
+                     effizienz_kuehlen_1_24_h,
+                     effizienz_kuehlen_1_12_m,
+                     effizienz_kuehlen_13_24_m,
+                     effizienz_warmwasser_1_24_h,
+                     effizienz_warmwasser_1_12_m,
+                     effizienz_warmwasser_13_24_m,
+                     stromverbrauch_heizen_1_24_h,
+                     stromverbrauch_heizen_1_12_m,
+                     stromverbrauch_heizen_13_24_m,
+                     stromverbrauch_kuehlen_1_24_h,
+                     stromverbrauch_kuehlen_1_12_m,
+                     stromverbrauch_kuehlen_13_24_m,
+                     stromverbrauch_warmwasser_1_24_h,
+                     stromverbrauch_warmwasser_1_12_m,
+                     stromverbrauch_warmwasser_13_24_m
                  ) VALUES (
                      %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
                      %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
                      %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
                      %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
                      %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
-                     %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
+                     %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                     %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                     %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                     %s, %s, %s, %s, %s, %s, %s);
                  ''', data_list)
 
             conn.commit()
