@@ -6,11 +6,9 @@ from datetime import datetime
 
 import psycopg2
 import requests
-import schedule
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
-
-load_dotenv()
+from schedule import every, repeat, run_pending
 
 
 @dataclass
@@ -118,25 +116,10 @@ class WpEnergy:
     stromverbrauch_warmwasser_13_24_m: str
 
 
-# Umgebungsvariablen lesen
-DB_HOST = os.getenv("DB_HOST")
-DB_NAME = os.getenv("DB_NAME")
-DB_USER = os.getenv("DB_USER")
-DB_PASSWORD = os.getenv("DB_PASSWORD")
-DB_PORT = os.getenv("DB_PORT", "5432")  # Standard-Port für PostgreSQL
+def create_schema():
+    c = conn.cursor()
 
-# Datenbankverbindung aufbauen
-conn = psycopg2.connect(
-    dbname=DB_NAME,
-    user=DB_USER,
-    password=DB_PASSWORD,
-    host=DB_HOST,
-    port=DB_PORT
-    )
-conn.autocommit = True
-c = conn.cursor()
-
-c.execute('''
+    c.execute('''
     CREATE TABLE IF NOT EXISTS data (
     timestamp TIMESTAMP,
     raumtemp_ist TEXT,
@@ -201,7 +184,7 @@ c.execute('''
     )
 ''')
 
-c.execute('''
+    c.execute('''
     ALTER TABLE data
             ADD COLUMN IF NOT EXISTS waermemenge_heizen_1_24_h TEXT,
             ADD COLUMN IF NOT EXISTS waermemenge_heizen_1_12_m TEXT,
@@ -231,7 +214,8 @@ c.execute('''
             ADD COLUMN IF NOT EXISTS stromverbrauch_warmwasser_1_12_m TEXT,
             ADD COLUMN IF NOT EXISTS stromverbrauch_warmwasser_13_24_m TEXT;
 ''')
-conn.commit()
+
+    conn.commit()
 
 
 def parse(url):
@@ -269,6 +253,7 @@ def extract_timestamp(soup):
     return timestamp
 
 
+@repeat(every(1).seconds)
 def scrape_and_store():
     url_status = "http://192.168.1.118/?s=1,0"
     url_wp = "http://192.168.1.118/?s=1,1"
@@ -594,15 +579,32 @@ def scrape_and_store():
         conn.rollback()
 
 
-scrape_and_store()
+if __name__ == '__main__':
+    load_dotenv()
 
-# Schedule to run every 1 minute
-schedule.every(1).minute.do(scrape_and_store)
+    # Umgebungsvariablen lesen
+    DB_HOST = os.getenv("DB_HOST")
+    DB_NAME = os.getenv("DB_NAME")
+    DB_USER = os.getenv("DB_USER")
+    DB_PASSWORD = os.getenv("DB_PASSWORD")
+    DB_PORT = os.getenv("DB_PORT", "5432")  # Standard-Port für PostgreSQL
 
-try:
-    while True:
-        schedule.run_pending()
-        time.sleep(1)
-except KeyboardInterrupt:
-    print("Stopped.")
-    conn.close()
+    # Datenbankverbindung aufbauen
+    conn = psycopg2.connect(
+        dbname=DB_NAME,
+        user=DB_USER,
+        password=DB_PASSWORD,
+        host=DB_HOST,
+        port=DB_PORT
+        )
+    conn.autocommit = True
+
+    create_schema()
+
+    try:
+        while True:
+            run_pending()
+            time.sleep(1)
+    except KeyboardInterrupt:
+        print("Stopped.")
+        conn.close()
