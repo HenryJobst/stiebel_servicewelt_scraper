@@ -30,6 +30,22 @@ services:
       - stiebel-network
     restart: unless-stopped
 
+
+  mystrom_app:
+    # image from: https://github.com/HenryJobst/mystrom_python_database
+    image: mystrom_python_database:latest
+    environment:
+      DB_HOST: db
+      DB_NAME: ${POSTGRES_DB}  # Verwende dieselbe Variable für den DB-Namen
+      DB_USER: ${POSTGRES_USER}  # Verwende dieselbe Variable für den DB-Benutzer
+      DB_PASSWORD: ${POSTGRES_PASSWORD}  # Verwende dieselbe Variable für das DB-Passwort
+      DB_PORT: 5432  # Standard-Port für PostgreSQL, kann auch aus einer Umgebungsvariable gesetzt werden, wenn nötig
+    depends_on:
+      - db
+    networks:
+      - stiebel-network
+    restart: unless-stopped
+
 volumes:
   postgres_data:
 
