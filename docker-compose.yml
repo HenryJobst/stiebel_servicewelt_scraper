@@ -1,6 +1,8 @@
 services:
   db:
-    image: postgres:16
+    image: ${POSTGRES_IMAGE_TAG}
+    env_file:
+      - .env
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
@@ -11,13 +13,42 @@ services:
       - stiebel-network
     ports:
       - "5436:5432"
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-q", "-d", "${POSTGRES_DB}", "-U", "${POSTGRES_USER}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
     restart: unless-stopped
+
+  backups:
+    image: ${POSTGRES_IMAGE_TAG}
+    command: >-
+      sh -c 'sleep $BACKUP_INIT_SLEEP &&
+      while true; do
+        pg_dump -h db -p 5432 -d $POSTGRES_DB -U $POSTGRES_USER | gzip > 
+      $POSTGRES_BACKUPS_PATH/$POSTGRES_BACKUP_NAME-$(date "+%Y-%m-%d_%H-%M").gz &&
+        find $POSTGRES_BACKUPS_PATH -type f -mtime +$POSTGRES_BACKUP_PRUNE_DAYS | xargs rm -f &&
+        sleep $BACKUP_INTERVAL; done'
+    volumes:
+      - postgres_backups_data:/var/lib/postgresql/data
+      - ${POSTGRES_LOCAL_BACKUPS_PATH}:${POSTGRES_BACKUPS_PATH}
+    env_file:
+      - .env
+    networks:
+      - stiebel-network
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
 
   app:
     build:
       context: .
       dockerfile: Dockerfile
     image: stiebel-servicewelt-scraper:latest
+    env_file:
+      - .env
     environment:
       DB_HOST: db
       DB_NAME: ${POSTGRES_DB}  # Verwende dieselbe Variable für den DB-Namen
@@ -25,7 +56,8 @@ services:
       DB_PASSWORD: ${POSTGRES_PASSWORD}  # Verwende dieselbe Variable für das DB-Passwort
       DB_PORT: 5432  # Standard-Port für PostgreSQL, kann auch aus einer Umgebungsvariable gesetzt werden, wenn nötig
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     networks:
       - stiebel-network
     restart: unless-stopped
@@ -34,6 +66,8 @@ services:
   mystrom_app:
     # image from: https://github.com/HenryJobst/mystrom_python_database
     image: mystrom_python_database:latest
+    env_file:
+      - .env
     environment:
       DB_HOST: db
       DB_NAME: ${POSTGRES_DB}  # Verwende dieselbe Variable für den DB-Namen
@@ -41,13 +75,15 @@ services:
       DB_PASSWORD: ${POSTGRES_PASSWORD}  # Verwende dieselbe Variable für das DB-Passwort
       DB_PORT: 5432  # Standard-Port für PostgreSQL, kann auch aus einer Umgebungsvariable gesetzt werden, wenn nötig
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     networks:
       - stiebel-network
     restart: unless-stopped
 
 volumes:
   postgres_data:
+  postgres_backups_data:
 
 networks:
   stiebel-network:
