@@ -12,7 +12,7 @@ services:
     networks:
       - stiebel-network
     ports:
-      - "5436:5432"
+      - "0.0.0.0:5436:5432"
     healthcheck:
       test: [ "CMD", "pg_isready", "-q", "-d", "${POSTGRES_DB}", "-U", "${POSTGRES_USER}" ]
       interval: 10s
