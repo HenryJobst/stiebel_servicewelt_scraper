@@ -13,8 +13,6 @@ jobs:
     permissions:
       contents: read
       packages: write
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
     steps:
       - name: Repository auschecken
@@ -22,7 +20,7 @@ jobs:
 
       - name: Docker-Metadaten extrahieren
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ghcr.io/${{ github.repository_owner }}/stiebel-servicewelt-scraper
           tags: |
