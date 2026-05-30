@@ -37,6 +37,27 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Docker-Image lokal bauen
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          push: false
+          tags: scan-target:local
+
+      - name: Trivy installieren
+        run: |
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh \
+            | sh -s -- -b /usr/local/bin
+
+      - name: Image auf CVEs scannen
+        run: |
+          trivy image \
+            --ignore-unfixed \
+            --severity HIGH,CRITICAL \
+            --exit-code 1 \
+            scan-target:local
+
       - name: Docker-Image bauen und pushen
         uses: docker/build-push-action@v6
         with:
