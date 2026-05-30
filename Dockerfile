@@ -4,8 +4,8 @@ FROM python:3.14-slim
 # Setze das Arbeitsverzeichnis im Container
 WORKDIR /app
 
-# Installiere python-dotenv und psycopg2-binary
-RUN pip install python-dotenv psycopg2-binary requests beautifulsoup4 schedule
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Kopiere das Python-Skript und die .env-Datei in den Container
 COPY ./scraper.py ./
