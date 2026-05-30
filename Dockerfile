@@ -5,7 +5,7 @@ FROM python:3.14-slim
 WORKDIR /app
 
 COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --root-user-action=ignore -r requirements.txt
 
 # Kopiere das Python-Skript und die .env-Datei in den Container
 COPY ./scraper.py ./
@@ -14,7 +14,6 @@ COPY ./scraper.py ./
 ENV DB_HOST=localhost \
     DB_NAME=stiebelwp \
     DB_USER=stiebelwp \
-    DB_PASSWORD=stiebelwp \
     DB_PORT=5432
 
 # Befehl zum Ausführen des Scripts beim Starten des Containers
