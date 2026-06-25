@@ -215,6 +215,10 @@ def create_schema():
             ADD COLUMN IF NOT EXISTS stromverbrauch_warmwasser_13_24_m TEXT;
 ''')
 
+    c.execute('''
+    CREATE INDEX IF NOT EXISTS idx_data_timestamp ON data (timestamp);
+''')
+
     conn.commit()
 
 
