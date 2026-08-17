@@ -4,6 +4,8 @@ FROM python:3.14-slim
 # Setze das Arbeitsverzeichnis im Container
 WORKDIR /app
 
+RUN apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/*
+
 COPY requirements.txt ./
 RUN pip install --no-cache-dir --root-user-action=ignore -r requirements.txt
 
