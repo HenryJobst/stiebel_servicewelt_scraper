@@ -48,9 +48,25 @@ jobs:
 
             nr, title = pr['number'], pr['title']
             checks = pr['statusCheckRollup']
+            mergeable = pr['mergeable']
 
-            if pr['mergeable'] != 'MERGEABLE':
-              print(f'PR #{nr}: nicht mergeable ({pr["mergeable"]}), übersprungen')
+            # GitHub berechnet "mergeable" asynchron - bei länger inaktiven PRs
+            # liefert die Listen-Abfrage oft UNKNOWN. Einzelabruf erzwingt die
+            # Neuberechnung; ein kurzer Retry deckt den restlichen Nachlauf ab.
+            if mergeable == 'UNKNOWN':
+              for _ in range(2):
+                single = subprocess.run(
+                  ['gh', 'pr', 'view', str(nr), '--repo', repo, '--json', 'mergeable'],
+                  capture_output=True, text=True, check=True
+                )
+                mergeable = json.loads(single.stdout)['mergeable']
+                if mergeable != 'UNKNOWN':
+                  break
+                import time
+                time.sleep(3)
+
+            if mergeable != 'MERGEABLE':
+              print(f'PR #{nr}: nicht mergeable ({mergeable}), übersprungen')
               skipped.append(f'#{nr}: {title} (nicht mergeable)')
               continue
 
