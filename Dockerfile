@@ -16,7 +16,8 @@ COPY ./scraper.py ./
 ENV DB_HOST=localhost \
     DB_NAME=stiebelwp \
     DB_USER=stiebelwp \
-    DB_PORT=5432
+    DB_PORT=5432 \
+    PYTHONUNBUFFERED=1
 
 # Befehl zum Ausführen des Scripts beim Starten des Containers
 CMD ["python", "./scraper.py"]

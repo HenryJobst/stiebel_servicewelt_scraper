@@ -116,6 +116,25 @@ class WpEnergy:
     stromverbrauch_warmwasser_13_24_m: str
 
 
+def connect_db(retries=5, delay=2):
+    for attempt in range(1, retries + 1):
+        try:
+            new_conn = psycopg2.connect(
+                dbname=DB_NAME,
+                user=DB_USER,
+                password=DB_PASSWORD,
+                host=DB_HOST,
+                port=DB_PORT
+                )
+            new_conn.autocommit = True
+            return new_conn
+        except psycopg2.OperationalError as e:
+            print(f"DB-Verbindung fehlgeschlagen (Versuch {attempt}/{retries}): {e}")
+            if attempt == retries:
+                raise
+            time.sleep(delay)
+
+
 def create_schema():
     c = conn.cursor()
 
@@ -378,6 +397,7 @@ def scrape_and_store():
         stromverbrauch_warmwasser_13_24_m=extract_data(soup_energy, 'STROMVERBRAUCH', 'WARMWASSER 13-24 M')
         )
 
+    global conn
     try:
         with conn.cursor() as cur:
             data_list = [
@@ -578,6 +598,16 @@ def scrape_and_store():
         # Weitere Debug-Informationen ausgeben
         print("Datenliste enthält:", len(data_list), "Elemente.")
         print(data_list)
+    except (psycopg2.OperationalError, psycopg2.InterfaceError) as e:
+        print("Datenbankverbindung verloren, baue sie neu auf:", e)
+        try:
+            conn.close()
+        except Exception:
+            pass
+        try:
+            conn = connect_db()
+        except psycopg2.OperationalError as reconnect_error:
+            print("Reconnect fehlgeschlagen, naechster Versuch im naechsten Tick:", reconnect_error)
     except psycopg2.Error as e:
         print("Database error:", e)
         conn.rollback()
@@ -594,14 +624,7 @@ if __name__ == '__main__':
     DB_PORT = os.getenv("DB_PORT", "5432")  # Standard-Port für PostgreSQL
 
     # Datenbankverbindung aufbauen
-    conn = psycopg2.connect(
-        dbname=DB_NAME,
-        user=DB_USER,
-        password=DB_PASSWORD,
-        host=DB_HOST,
-        port=DB_PORT
-        )
-    conn.autocommit = True
+    conn = connect_db()
 
     create_schema()
 
